@@ -34,6 +34,3 @@ def get_traffic_data():
 if __name__ == '__main__':
     # For local development, use the Flask development server
     app.run(debug=True)
-else:
-    gunicorn_options = "-b 0.0.0.0:5000 -w 4"
-    os.system(f"gunicorn {gunicorn_options} main:app")
