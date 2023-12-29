@@ -2,9 +2,12 @@ from flask import Flask, render_template, jsonify
 import json
 from traffic_database import get_latest_traffic_sum
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'smihiiydhy'
+app.secret_key = os.getenv("FLASK_SECRET_KEY", default="defaultkey")
 
 # Read coordinates from the JSON file
 json_filename = 'coordinates.json'
