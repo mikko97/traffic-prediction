@@ -5,13 +5,10 @@ import requests
 import traceback
 import logging
 import os
-import sched
-import time
-from threading import Thread
 from dotenv import load_dotenv
 
 # Configure logging
-logging.basicConfig(filename='script_log.txt', level=logging.DEBUG)
+logging.basicConfig(filename='/tmp/script_log.txt', level=logging.DEBUG)
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -33,12 +30,10 @@ class TrafficData(db.Model):
     timestamp = db.Column(db.DateTime)
 
 try:
-    # Attempt to create the database
     with app.app_context():
-        db.create_all()  # Create all tables (including trafficdata) if they do not exist
+        db.create_all()
 
 except Exception as create_db_error:
-    # Log if the creation of the database fails
     logging.error(f"Failed to create the database: {create_db_error}")
 
 def collect_and_store_data():
@@ -78,7 +73,7 @@ def collect_and_store_data():
                         logging.error(f"Failed to commit changes: {commit_error}")
 
                 except requests.exceptions.RequestException as e:
-                    with open("error_log.txt", "a") as error_file:
+                    with open("/tmp/error_log.txt", "a") as error_file:
                         error_file.write(f"Failed to fetch data from the API: {e}\n")
                         traceback.print_exc(file=error_file)
                         logging.error('Error occurred during API request.')
@@ -86,26 +81,3 @@ def collect_and_store_data():
         except Exception as outer_error:
             logging.error(f"An unexpected error occurred: {outer_error}")
             traceback.print_exc()
-
-def periodic_data_collection(scheduler, interval):
-    while True:
-        try:
-            scheduler.enter(interval, 1, collect_and_store_data, ())
-            scheduler.run()
-        except Exception as scheduling_error:
-            logging.error(f"Error occurred during periodic data collection: {scheduling_error}")
-            traceback.print_exc()
-
-if __name__ == '__main__':
-    try:
-        scheduler = sched.scheduler(time.time, time.sleep)
-        interval = 600  # 10 minutes
-
-        # Start a separate thread for periodic data collection
-        data_collection_thread = Thread(target=periodic_data_collection, args=(scheduler, interval))
-        data_collection_thread.start()
-        app.run()
-
-    except Exception as main_error:
-        logging.error(f"An unexpected error occurred in the main block: {main_error}")
-        traceback.print_exc()
