@@ -6,7 +6,7 @@
 - [License](#license)
 
 ## Introduction
-The goal of this project would be to predict car traffic in Tampere. At the moment I have a website hosted in AWS, that shows current traffic amounts on certain intersections.
+The goal of this project would be to predict car traffic in Tampere. At the moment I have a website hosted in AWS (link in about section), that shows current traffic amounts on certain intersections.
 To do:
   1. Continue collecting data
   2. Analyze and clean data (There seems to be a lot of uncertainty in the reported traffic amounts by the traffic detectors)
