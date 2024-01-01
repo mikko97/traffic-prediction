@@ -1,3 +1,18 @@
+// Create list of timestamps to compare with data coming from database
+let timestamps = [];
+document.addEventListener("DOMContentLoaded", function() {
+    timestamps.length = 0;
+    let currentTime = new Date();
+    currentTime.setTime(currentTime.getTime() + 2 * 60 * 60 * 1000);
+    const options = { timeZone: 'Europe/Helsinki' };
+    for (let i = 0; i < 7; i++) {
+        const formattedTimestamp = currentTime.toISOString(options).replace('T', ' ').slice(0, 19);
+        timestamps.push(formattedTimestamp);
+        currentTime.setMinutes(currentTime.getMinutes() - 10);
+    }
+});
+
+
 // Function to fetch data asynchronously
 function fetchDataAndInitializeMap() {
     $.ajax({
@@ -7,14 +22,13 @@ function fetchDataAndInitializeMap() {
         success: function (data) {
             var coordinates = data;
 
-            // Now fetch traffic data
+            // Fetch traffic data
             $.ajax({
                 url: '/get_traffic_data',
                 type: 'GET',
                 dataType: 'json',
                 success: function (trafficData) {
                     var traffic_data = trafficData;
-                    // Call a function to initialize the map with the data
                     initializeMap(coordinates, traffic_data);
                 },
                 error: function (error) {
@@ -40,19 +54,14 @@ function initializeMap(coordinates, traffic_data) {
     $(function () {
         // Initialize the map
         var map = L.map('map').setView([61.497118, 23.765519], 14);
-
-        // Add a tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // Get the timestamp keys
         var timestampKeys = Object.keys(traffic_data);
-
-        // Choose the latest timestamp
         var lastTimestampIndex = timestampKeys.length - 1;
-
         var selectedTimestampKey = timestampKeys[lastTimestampIndex];
         var selectedTimestampData = traffic_data[selectedTimestampKey];
-        addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map);
+
+        addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map, 0);
 
         // Initialize the slider
         var slider = $("#time-slider").slider({
@@ -71,9 +80,9 @@ function initializeMap(coordinates, traffic_data) {
 
                 // Ensure the index is within bounds
                 selectedTimestampIndex = Math.max(0, Math.min(timestampKeys.length - 1, selectedTimestampIndex));
-                
+
                 var selectedTimestampKey = timestampKeys[selectedTimestampIndex];
-                updateMapWithSelectedTimestamp(selectedTimestampKey);
+                updateMapWithSelectedTimestamp(selectedTimestampKey, ui.value);
                 updateTimeIndicator(ui.value);
             }
         });
@@ -86,7 +95,7 @@ function initializeMap(coordinates, traffic_data) {
         });
 
         // Function to update the map with the data for the selected timestamp
-        function updateMapWithSelectedTimestamp(selectedTimestampKey) {
+        function updateMapWithSelectedTimestamp(selectedTimestampKey, timeIndex) {
             var selectedTimestampData = traffic_data[selectedTimestampKey];
 
             map.eachLayer(function (layer) {
@@ -95,7 +104,7 @@ function initializeMap(coordinates, traffic_data) {
                 }
             });
 
-            addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map);
+            addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map, timeIndex);
         }
 
         // Function to update the time indicator
@@ -124,12 +133,12 @@ function initializeMap(coordinates, traffic_data) {
             var selectedTimestampData = traffic_data[selectedTimestampKey];
 
             // Add markers
-            addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map);
+            addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map, 0);
         }
     });
 }
 
-function addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map) {
+function addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, map, timeIndex) {
     for (var deviceKey in selectedTimestampData) {
         if (selectedTimestampData.hasOwnProperty(deviceKey)) {
             var trafficAmount = selectedTimestampData[deviceKey];
@@ -141,13 +150,24 @@ function addMarkers(selectedTimestampData, coordinates, selectedTimestampKey, ma
 
                 // Set the color of the marker based on the traffic amount
                 var dynamicColor = calculateColor(trafficAmount);
+                var showWhenDataFteched = selectedTimestampKey;
+                var showTrafficAmount = trafficAmount;
+
+                const date1 = new Date(selectedTimestampKey);
+                const date2 = new Date(timestamps[timeIndex]);
+                if(Math.abs(date1-date2)>600000) {
+                    var showWhenDataFteched = "No data from this time. Try reloading the page.";
+                    var showTrafficAmount = "No data from this time. Try reloading the page.";
+                    dynamicColor = "#000000";
+                }
+
                 L.circle(coord, {
                     color: dynamicColor,
                     fillColor: dynamicColor,
                     fillOpacity: 0.8,
                     radius: 60
-                }).addTo(map).bindPopup('ID: ' + deviceKey + '<br>Cars in the last hour: ' + trafficAmount
-                    + '<br>Data fetched at: ' + selectedTimestampKey);
+                }).addTo(map).bindPopup('ID: ' + deviceKey + '<br>Cars in the last hour: ' + showTrafficAmount
+                    + '<br>Data fetched at: ' + showWhenDataFteched);
             }
         }
     }

@@ -6,6 +6,7 @@ import traceback
 import logging
 import os
 from dotenv import load_dotenv
+import pytz
 
 # Configure logging
 logging.basicConfig(filename='/tmp/script_log.txt', level=logging.DEBUG)
@@ -41,7 +42,9 @@ def collect_and_store_data():
         devices_to_fetch = ["tre216", "tre209", "tre212", "tre134", "tre148", "tre144", "tre133", "tre132", "tre124",
                             "tre101", "tre115", "tre103", "tre158", "tre227", "tre112_114", "tre117_575", "tre120_159",
                             "tre121", "tre123", "tre127", "tre150"]
-        end_time = datetime.now()
+        
+        local_timezone = pytz.timezone('Europe/Helsinki')
+        end_time = datetime.now(local_timezone)
         start_time = end_time - timedelta(minutes=1)
 
         try:

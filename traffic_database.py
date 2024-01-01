@@ -4,6 +4,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 import os
 import logging
+import pytz
 
 logging.basicConfig(filename='error_log.txt', level=logging.ERROR)
 
@@ -32,6 +33,26 @@ class TrafficData(db.Model):
     reliab_value = db.Column(db.Float)
     timestamp = db.Column(db.DateTime)
 
+detectors_to_include = {
+                '216': ['c50', 'a90', 'b60'],
+                '212': ['a20', 'b55'],
+                '134': ['c50', 'b60_1', 'b60_2', 'a60_1', 'a60_2'],
+                '133': ['b60_1', 'b60_2', 'f50', 'd50', 'c60', 'a60'],
+                '132': ['b100_1', 'b100_2', 'c50', 'a60_1', 'a60_2'],
+                '144': ['a60', 'd30', 'b60_1', 'b60_2', 'c25'],
+                '103': ['a55', 'b55', 'c60_1', 'c60_2', 'd30', 'e55'],
+                '227': ['a55_1', 'a55_2', 'b50', 'c45', 'e45', 'f55'],
+                '112_114': ['a17_1', 'a17_2', 'b100_1', 'b100_2', 'e35'],
+                '117_575': ['a100_1', 'a100_2', 'c45', 'j93_1', 'j93_2'],
+                '120_159': ['a35_1', 'a35_2', 'j120_1', 'j120_2', 'd50', 'e50', 'm45', 'n45'],
+                '121': ['a30', 'c30', 'b80', 'e50_1', 'e50_2', 'f50', 'g50'],
+                '123': ['a100_1', 'a100_2', 'b100_1', 'b100_2', 'd60'],
+                '127': ['a115_1', 'a115_2', 'b115', 'c75_1', 'c75_2', 'd65_1', 'd65_2', 'd65_3', 'd65_4', 'e100_1', 'e100_2', 'e100_3', 
+                        'e100_4', 'g80'],
+                '150': ['a100_1', 'a100_2', 'b120_1', 'b120_2', 'c110', 'd60']
+            }
+local_timezone = pytz.timezone('Europe/Helsinki')
+
 def get_latest_traffic_sum(n):
     """
     Fetches the latest sum of traffic amounts for each device.
@@ -53,27 +74,8 @@ def get_latest_traffic_sum(n):
     """
     try:
         with app.app_context():
-            detectors_to_include = {
-                '216': ['c50', 'a90', 'b60'],
-                '212': ['a20', 'b55'],
-                '134': ['c50', 'b60_1', 'b60_2', 'a60_1', 'a60_2'],
-                '133': ['b60_1', 'b60_2', 'f50', 'd50', 'c60', 'a60'],
-                '132': ['b100_1', 'b100_2', 'c50', 'a60_1', 'a60_2'],
-                '144': ['a60', 'd30', 'b60_1', 'b60_2', 'c25'],
-                '103': ['a55', 'b55', 'c60_1', 'c60_2', 'd30', 'e55'],
-                '227': ['a55_1', 'a55_2', 'b50', 'c45', 'e45', 'f55'],
-                '112_114': ['a17_1', 'a17_2', 'b100_1', 'b100_2', 'e35'],
-                '117_575': ['a100_1', 'a100_2', 'c45', 'j93_1', 'j93_2'],
-                '120_159': ['a35_1', 'a35_2', 'j120_1', 'j120_2', 'd50', 'e50', 'm45', 'n45'],
-                '121': ['a30', 'c30', 'b80', 'e50_1', 'e50_2', 'f50', 'g50'],
-                '123': ['a100_1', 'a100_2', 'b100_1', 'b100_2', 'd60'],
-                '127': ['a115_1', 'a115_2', 'b115', 'c75_1', 'c75_2', 'd65_1', 'd65_2', 'd65_3', 'd65_4', 'e100_1', 'e100_2', 'e100_3', 
-                        'e100_4', 'g80'],
-                '150': ['a100_1', 'a100_2', 'b120_1', 'b120_2', 'c110', 'd60']
-            }
-            
             # Calculate the timestamp cutoff for the last n timestamps
-            cutoff_timestamp = datetime.now() - timedelta(minutes=n*10)
+            cutoff_timestamp = datetime.now(local_timezone) - timedelta(minutes=n*10)
 
             latest_timestamp_subquery = db.session.query(
                 TrafficData.device,
@@ -118,4 +120,3 @@ def get_latest_traffic_sum(n):
         raise
 
     return results_by_timestamp
-    
